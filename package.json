@@ -1,0 +1,21 @@
+{
+  "name": "substrate-reconciler",
+  "version": "0.1.0",
+  "description": "Prototype balance reconciler for usage with substrate-api-sidecars block tracing endpoint",
+  "main": "index.js",
+  "repository": "https://github.com/paritytech/substrate-reconciler.git",
+  "author": "emostov <32168567+emostov@users.noreply.github.com>",
+  "license": "APACHE-2.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "run": "node build/index.js"
+  },
+  "dependencies": {
+    "yargs": "^16.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.22",
+    "@types/yargs": "^15.0.12"
+  }
+}
