@@ -42,7 +42,7 @@ export class Reconciler {
 				}
 			}
 
-			const datasAreEqual = 
+			const datasAreEqual =
 				accountedData?.free.eq(systemData?.free) &&
 				accountedData.reserved.eq(systemData?.reserved) &&
 				accountedData.miscFrozen.eq(systemData.miscFrozen) &&
@@ -67,9 +67,14 @@ export class Reconciler {
 	}
 
 	accountOperations(accountDatas: Record<string, PAccountData>, operations: POperation[]) {
-		operations.forEach((op) => {
-			const accountData = accountDatas[op.address];
-			accountData && accountData[op.accountDataField].add(op.amount.value)
+		operations.forEach(({ address, accountDataField, amount }) => {
+			if (address in accountDatas) {
+				const val = (accountDatas[address] as PAccountData)[accountDataField];
+				const updatedVal = val.add(amount.value);
+				(accountDatas[address] as PAccountData)[accountDataField] = updatedVal;
+			} else {
+				console.error('ADDDRESS not found in accountData [Reconciler.accountOperations]')
+			}
 		})
 	}
 

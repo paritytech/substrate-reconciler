@@ -35,8 +35,6 @@ async function main() {
 		.alias('h', 'help')
 		.argv;
 
-	console.log(argv);
-
 	const crawler = new Crawler(argv.sidecarUrl, console.log);
 
 	if (argv.singleHeight) {

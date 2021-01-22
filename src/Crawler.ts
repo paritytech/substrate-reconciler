@@ -18,8 +18,8 @@ export class Crawler {
 		const blockOperations = await this.api.getOperations(height);
 		const reconciler = new Reconciler(blockOperations, this.sidecarUrl);
 		try {
-			reconciler.reconcile()
-			this.log && this.log(`Succesfully reconciled block ${height}`);
+			const result = await reconciler.reconcile()
+			this.log && this.log(result);
 			return true
 		} catch (e: unknown) {
 			this.logError(e, height);
