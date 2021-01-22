@@ -29,12 +29,17 @@ export class Reconciler {
                 accountedData.feeFrozen.eq(systemData.feeFrozen);
             if (!datasAreEqual) {
                 throw {
-                    message: 'accounted and system data for accounts not equal',
+                    error: true,
+                    height: curBlockHeight,
                     accountedData,
                     systemData
                 };
             }
         });
+        return {
+            error: false,
+            height: curBlockHeight
+        };
     }
     accountOperations(accountDatas, operations) {
         operations.forEach((op) => {
