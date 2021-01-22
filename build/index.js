@@ -1,15 +1,23 @@
 #!/usr/bin/env node
 "use strict";
+// run `ts-node src/index.ts`
 const argv = require('yargs/yargs')(process.argv.slice(2))
-    .usage('Usage: $0 <command> [options]')
-    .command('test', 'Test yargs out')
-    .example('$0 test -v "hello world"', 'print hello world to the screen')
-    .option('value', {
+    .option('sidecar-url', {
     string: true,
-    alias: 'v'
+    alias: 'S',
+    description: "url for substrate-api-sidecar"
+})
+    .option('start-block', {
+    number: true,
+    alias: 's',
+    description: "block to start balance reconciliation on"
+})
+    .option('end-block', {
+    number: true,
+    alias: 'e',
+    description: "block to end balance reconcilation on"
 })
     .help('h')
     .alias('h', 'help')
-    .epilog('finding money')
     .argv;
 console.log(argv);

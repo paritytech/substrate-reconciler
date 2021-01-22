@@ -13,7 +13,7 @@ export interface PAccountData {
 	feeFrozen: BN;
 }
 
-export type AccountDataField = 'free' | 'reserved' | 'miscFrozen' | 'feeFrozen'
+export type AccountDataField = keyof Omit<PAccountData, "address" | "tokenSymbol">;
 
 /**
  * Parsed Operation.
@@ -22,7 +22,6 @@ export interface POperation {
 	operationId: OperationId;
 	address: string;
 	storage: StorageResourceId;
-	miscFrozen: BN;
 	accountDataField: AccountDataField;
 	amount: {
 		value: BN,
