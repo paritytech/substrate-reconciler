@@ -24,6 +24,13 @@ Make a transaction and them specify that block to try and reconcile:
 ts-node src/index.ts --singleHeight 15
 ```
 
+or if you don't want/have ts-node
+
+```bash
+yarn build
+node src/index.js --singleHeight 15
+```
+
 ```bash
 ts-node src/index.ts --help
 ```
