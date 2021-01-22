@@ -3,6 +3,14 @@ import { ApiSidecar } from "./SidecarApi";
 import { AccountDataField, PAccountData, POperation,  } from "./types/reconciler";
 import { BlocksOperations } from "./types/sidecar";
 
+function bnObjToString(o: Record<string, any>): Record<string, string> {
+	return Object.keys(o).reduce((acc, cur)  => {
+		acc[cur] = o[cur].toString ? o[cur].toString(10) : o[cur];
+
+		return acc;
+	}, {} as Record<string, string>)
+}
+
 export class Reconciler {
 	private api: ApiSidecar;
 	constructor(private blockOps: BlocksOperations, sidecarUrl: string) {
@@ -15,35 +23,42 @@ export class Reconciler {
 			throw new Error("Block height is not a number");
 		}
 
-		const prevBlockHeight = parseInt(this.blockOps.height) -1;
+		const prevBlockHeight = curBlockHeight -1;
 		const preBlockDatas = await this.getAccountDatas(prevBlockHeight);
 		// warning: preBlockData is mutated in place here
 		this.accountOperations(preBlockDatas, this.parseOperations());
-		const postBlockDatas = await this.getAccountDatas(parseInt(this.blockOps.height));
+		const postBlockDatas = await this.getAccountDatas(curBlockHeight);
 
-		Object.keys(preBlockDatas).forEach((address) => {
+		for (const address of Object.keys(preBlockDatas)) {
 			// What we think the balance is
 			const accountedData = preBlockDatas[address];
 			// What the node thinks the balance is
 			const systemData = postBlockDatas[address];
 			if(!accountedData || !systemData) {
-				throw new Error('Data for account missing');
+				return {
+					address,
+					error: true,
+					height: curBlockHeight
+				}
 			}
 
-			const datasAreEqual = accountedData?.free.eq(systemData?.free) &&
+			const datasAreEqual = 
+				accountedData?.free.eq(systemData?.free) &&
 				accountedData.reserved.eq(systemData?.reserved) &&
 				accountedData.miscFrozen.eq(systemData.miscFrozen) &&
 				accountedData.feeFrozen.eq(systemData.feeFrozen)
 
 			if(!datasAreEqual) {
-				throw {
+				console.log(`Error with ${address} at height ${curBlockHeight}`)
+				console.log('Pre data: ', bnObjToString(accountedData));
+				console.log('Post data: ', bnObjToString(systemData));
+				return {
+					address,
 					error: true,
-					height: curBlockHeight,
-					accountedData,
-					systemData
+					height: curBlockHeight
 				}
 			}
-		})
+		}
 
 		return {
 			error: false,

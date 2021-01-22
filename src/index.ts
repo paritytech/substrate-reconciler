@@ -38,26 +38,25 @@ async function main() {
 	console.log(argv);
 
 	const crawler = new Crawler(argv.sidecarUrl, console.log);
+
 	if (argv.singleHeight) {
-		crawler.crawlSet([argv.singleHeight]);
+		await crawler.crawlSet([argv.singleHeight]);
 	} else if (argv.blockSet) {
-		crawler.crawlSet(argv.blockSet);
+		await crawler.crawlSet(argv.blockSet);
 	} else if (argv.startBlock) {
-		crawler.crawl(argv.startBlock, argv.endBlock);
+		await crawler.crawl(argv.startBlock, argv.endBlock);
 	} else {
-		console.log("no valid options selected")
+		await console.log("no valid options selected")
 	}
-
 }
-
-process.on('SIGINT', () => {
-	console.log('Detected kill signal. Exiting...');
-	process.exit(1);
-})
 
 main().catch((e) => {
 	console.error(e);
 	console.error('Caught error in main');
 })
+// process.on('SIGINT', () => {
+// 	console.log('Detected kill signal. Exiting...');
+// 	process.exit(1);
+// })
 
 
