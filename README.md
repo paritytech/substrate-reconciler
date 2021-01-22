@@ -31,6 +31,8 @@ yarn build
 node src/index.js --singleHeight 15
 ```
 
+Learn the other options of the CLI
+
 ```bash
 ts-node src/index.ts --help
 ```
