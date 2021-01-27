@@ -44,7 +44,7 @@ async function main() {
 	} else if (argv.startBlock) {
 		await crawler.crawl(argv.startBlock, argv.endBlock);
 	} else {
-		await console.log("no valid options selected")
+		console.log("no valid options selected")
 	}
 }
 
@@ -52,9 +52,9 @@ main().catch((e) => {
 	console.error(e);
 	console.error('Caught error in main');
 })
-// process.on('SIGINT', () => {
-// 	console.log('Detected kill signal. Exiting...');
-// 	process.exit(1);
-// })
+process.on('SIGINT', () => {
+	console.log('Detected kill signal. Exiting...');
+	process.exit(1);
+})
 
 

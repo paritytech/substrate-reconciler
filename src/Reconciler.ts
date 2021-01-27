@@ -60,6 +60,11 @@ export class Reconciler {
 			}
 		}
 
+		console.debug('Balances after processing the blocks operations.')
+		Object.keys(preBlockDatas).forEach((addr) => {
+			console.debug(bnObjToString(preBlockDatas[addr] as PAccountData))
+		})
+
 		return {
 			error: false,
 			height: curBlockHeight
