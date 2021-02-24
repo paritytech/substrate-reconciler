@@ -37,21 +37,40 @@ async function main() {
 
 	const crawler = new Crawler(argv.sidecarUrl, console.log);
 
+	let failedHeights;
 	if (argv.singleHeight) {
-		await crawler.crawlSet([argv.singleHeight]);
+		console.log(`block set: ${argv.blockSet}`);
+		failedHeights = await crawler.crawlSet([argv.singleHeight]);
 	} else if (argv.blockSet) {
-		await crawler.crawlSet(argv.blockSet);
+		console.log(`block set: ${argv.blockSet}`);
+		failedHeights = await crawler.crawlSet(argv.blockSet);
 	} else if (argv.startBlock) {
-		await crawler.crawl(argv.startBlock, argv.endBlock);
+		console.log(`start: ${argv.startBlock} - end: ${argv.endBlock}`);
+		failedHeights = await crawler.crawl(argv.startBlock, argv.endBlock);
 	} else {
 		console.log("no valid options selected")
 	}
+
+	if (failedHeights && failedHeights.length) {
+		console.log("The following block heights failed")
+		failedHeights?.forEach((h) => console.log(h))
+	} else {
+		console.log("No failures in the range")
+	}
+
+	console.log('Process complete')
 }
+
 
 main().catch((e) => {
 	console.error(e);
 	console.error('Caught error in main');
 })
+.finally(() => {
+	console.log('Exiting...');
+	process.exit(1);
+})
+
 process.on('SIGINT', () => {
 	console.log('Detected kill signal. Exiting...');
 	process.exit(1);

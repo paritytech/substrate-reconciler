@@ -1,10 +1,13 @@
-import { Reconciler } from "./Reconciler";
-import { ApiSidecar } from "./SidecarApi";
-export class Crawler {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Crawler = void 0;
+const Reconciler_1 = require("./Reconciler");
+const SidecarApi_1 = require("./SidecarApi");
+class Crawler {
     constructor(sidecarUrl, log) {
         this.sidecarUrl = sidecarUrl;
         this.log = log;
-        this.api = new ApiSidecar(this.sidecarUrl);
+        this.api = new SidecarApi_1.ApiSidecar(this.sidecarUrl);
     }
     logError(e, height) {
         this.log && this.log(`Failed to reconcile block ${height}`);
@@ -14,10 +17,10 @@ export class Crawler {
     }
     async crawlHeight(height) {
         const blockOperations = await this.api.getOperations(height);
-        const reconciler = new Reconciler(blockOperations, this.sidecarUrl);
+        const reconciler = new Reconciler_1.Reconciler(blockOperations, this.sidecarUrl);
         try {
-            reconciler.reconcile();
-            this.log && this.log(`Succesfully reconciled block ${height}`);
+            const result = await reconciler.reconcile();
+            this.log && this.log(result);
             return true;
         }
         catch (e) {
@@ -58,3 +61,4 @@ export class Crawler {
         return errorHeights;
     }
 }
+exports.Crawler = Crawler;

@@ -1,4 +1,10 @@
-import axios from "axios";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ApiSidecar = void 0;
+const axios_1 = __importDefault(require("axios"));
 /**
  * Block execution on the main thread for `ms` milliseconds.
  *
@@ -12,10 +18,10 @@ function sleep(ms) {
         }, ms);
     });
 }
-export class ApiSidecar {
+class ApiSidecar {
     constructor(sidecarBaseUrl) {
         this.SECOND = 1000;
-        this.client = axios.create({ baseURL: sidecarBaseUrl });
+        this.client = axios_1.default.create({ baseURL: sidecarBaseUrl });
     }
     /**
      * Execute a get request to `uri` with exponential backoff for failed request
@@ -36,6 +42,24 @@ export class ApiSidecar {
                 await sleep(2 * attempts * this.SECOND);
                 return await this.retryGet(uri, attempts);
             }
+            if (e.response) {
+                // The request was made and the server responded with a status code
+                // that falls out of the range of 2xx
+                console.log(e.response.data);
+                console.log(e.response.status);
+                console.log(e.response.headers);
+            }
+            else if (e.request) {
+                // The request was made but no response was received
+                // `e.request` is an instance of XMLHttpRequest in the browser and an instance of
+                // http.ClientRequest in node.js
+                console.log(e.request);
+            }
+            else {
+                // Something happened in setting up the request that triggered an e
+                console.log('Error', e.message);
+            }
+            console.log(e.config);
             throw e;
         }
     }
@@ -65,3 +89,4 @@ export class ApiSidecar {
         return response.data;
     }
 }
+exports.ApiSidecar = ApiSidecar;
