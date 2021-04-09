@@ -59,7 +59,7 @@ class ApiSidecar {
                 // Something happened in setting up the request that triggered an e
                 console.log('Error', e.message);
             }
-            console.log(e.config);
+            // console.log(e.config);
             throw e;
         }
     }

@@ -99,11 +99,12 @@ export class Reconciler {
 					storage: op.storage,
 				}
 			}
-
+			// TODO there should be a more extensive solution
+			const address = op.address.Id || op.address as unknown as string;
 			return {
 				operationId: op.operationId,
 				storage: op.storage,
-				address: op.address.Id,
+				address,
 				accountDataField: accountDataField as AccountDataField,
 				amount: {
 					value: new BN(op.amount.value),
@@ -115,7 +116,9 @@ export class Reconciler {
 
 	private findAccounts(): string[] {
 		return [...this.blockOps.operations.reduce((seen, op) => {
-			seen.add(op.address.Id);
+			// TODO there should be a more extensive solution
+			const address = op.address.Id || op.address as unknown as string;
+			seen.add(address);
 			return seen;
 		}, new Set<string>()).values()];
 	}
