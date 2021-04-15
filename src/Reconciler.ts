@@ -11,6 +11,10 @@ function bnObjToString(o: Record<string, any>): Record<string, string> {
 	}, {} as Record<string, string>)
 }
 
+function getAddress(thing: unkwown): string {
+	return thing?.Id || thing?.id || thing as string
+}
+
 export class Reconciler {
 	private api: ApiSidecar;
 	constructor(private blockOps: BlocksOperations, sidecarUrl: string) {
@@ -78,7 +82,8 @@ export class Reconciler {
 				const updatedVal = val.add(amount.value);
 				(accountDatas[address] as PAccountData)[accountDataField] = updatedVal;
 			} else {
-				console.error('ADDDRESS not found in accountData [Reconciler.accountOperations]')
+				// @ts-ignore
+				console.error(`ADDDRESS ${address} not found in accountData [Reconciler.accountOperations]`)
 			}
 		})
 	}
@@ -100,7 +105,8 @@ export class Reconciler {
 				}
 			}
 			// TODO there should be a more extensive solution
-			const address = op.address.Id || op.address as unknown as string;
+			// @ts-ignore
+			const address = op.address.Id || op.address.id ||  op.address as unknown as string;
 			return {
 				operationId: op.operationId,
 				storage: op.storage,
@@ -117,7 +123,8 @@ export class Reconciler {
 	private findAccounts(): string[] {
 		return [...this.blockOps.operations.reduce((seen, op) => {
 			// TODO there should be a more extensive solution
-			const address = op.address.Id || op.address as unknown as string;
+			// @ts-ignore
+			const address = op.address.Id || op.address.id || op.address as unknown as string;
 			seen.add(address);
 			return seen;
 		}, new Set<string>()).values()];
@@ -145,6 +152,4 @@ export class Reconciler {
 			return acc;
 		}, {} as Record<string, PAccountData>);
 	}
-
-
 }
