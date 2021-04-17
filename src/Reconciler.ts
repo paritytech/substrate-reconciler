@@ -13,7 +13,7 @@ function bnObjToString(o: Record<string, any>): Record<string, string> {
 
 function getAddress(thing: unknown): string {
 	const address = (thing as { Id: string })?.Id || (thing as { id: string })?.id || thing
-	if(typeof address !== 'string') {
+	if (typeof address !== 'string') {
 		throw new Error('ADDRESS could not be extracted [getAddress]')
 	}
 
@@ -127,9 +127,7 @@ export class Reconciler {
 
 	private findAccounts(): string[] {
 		return [...this.blockOps.operations.reduce((seen, op) => {
-			// TODO there should be a more extensive solution
-			// @ts-ignore
-			const address = getAddres(op.address);
+			const address = getAddress(op.address);
 			seen.add(address);
 			return seen;
 		}, new Set<string>()).values()];
