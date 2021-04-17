@@ -11,8 +11,13 @@ function bnObjToString(o: Record<string, any>): Record<string, string> {
 	}, {} as Record<string, string>)
 }
 
-function getAddress(thing: unkwown): string {
-	return thing?.Id || thing?.id || thing as string
+function getAddress(thing: unknown): string {
+	const address = (thing as { Id: string })?.Id || (thing as { id: string })?.id || thing
+	if(typeof address !== 'string') {
+		throw new Error('ADDRESS could not be extracted [getAddress]')
+	}
+
+	return address;
 }
 
 export class Reconciler {
@@ -106,7 +111,7 @@ export class Reconciler {
 			}
 			// TODO there should be a more extensive solution
 			// @ts-ignore
-			const address = op.address.Id || op.address.id ||  op.address as unknown as string;
+			const address = getAddress(op.address)
 			return {
 				operationId: op.operationId,
 				storage: op.storage,
@@ -124,7 +129,7 @@ export class Reconciler {
 		return [...this.blockOps.operations.reduce((seen, op) => {
 			// TODO there should be a more extensive solution
 			// @ts-ignore
-			const address = op.address.Id || op.address.id || op.address as unknown as string;
+			const address = getAddres(op.address);
 			seen.add(address);
 			return seen;
 		}, new Set<string>()).values()];
