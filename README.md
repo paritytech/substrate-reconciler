@@ -4,7 +4,7 @@ Prototype balance reconciler for usage with `substrate-api-sidecars` block traci
 
 ## account with me
 
-Start up a substrate / polkadot node that uses the substrate branch [state-trace-rpc](https://github.com/paritytech/substrate/pull/7780)
+Start up a polkadot node that uses the substrate branch [state-trace-rpc](https://github.com/paritytech/substrate/pull/7780)
 
 ```
 # instructions not included here
@@ -18,7 +18,7 @@ yarn
 yarn dev
 ```
 
-Make a transaction and them specify that block to try and reconcile:
+Reconcile a specific block:
 
 ```bash
 ts-node src/index.ts --singleHeight 15
