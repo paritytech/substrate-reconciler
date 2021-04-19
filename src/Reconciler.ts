@@ -87,7 +87,6 @@ export class Reconciler {
 				const updatedVal = val.add(amount.value);
 				(accountDatas[address] as PAccountData)[accountDataField] = updatedVal;
 			} else {
-				// @ts-ignore
 				console.error(`ADDDRESS ${address} not found in accountData [Reconciler.accountOperations]`)
 			}
 		})
@@ -109,8 +108,7 @@ export class Reconciler {
 					storage: op.storage,
 				}
 			}
-			// TODO there should be a more extensive solution
-			// @ts-ignore
+
 			const address = getAddress(op.address)
 			return {
 				operationId: op.operationId,
