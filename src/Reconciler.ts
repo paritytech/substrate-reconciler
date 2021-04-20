@@ -1,20 +1,22 @@
-import BN from "bn.js";
-import { ApiSidecar } from "./SidecarApi";
-import { AccountDataField, PAccountData, POperation,  } from "./types/reconciler";
-import { BlocksOperations } from "./types/sidecar";
+import BN from 'bn.js';
+
+import { ApiSidecar } from './SidecarApi';
+import { AccountDataField, PAccountData, POperation } from './types/reconciler';
+import { BlocksOperations } from './types/sidecar';
 
 function bnObjToString(o: Record<string, any>): Record<string, string> {
-	return Object.keys(o).reduce((acc, cur)  => {
+	return Object.keys(o).reduce((acc, cur) => {
 		acc[cur] = o[cur].toString ? o[cur].toString(10) : o[cur];
 
 		return acc;
-	}, {} as Record<string, string>)
+	}, {} as Record<string, string>);
 }
 
 function getAddress(thing: unknown): string {
-	const address = (thing as { Id: string })?.Id || (thing as { id: string })?.id || thing
+	const address =
+		(thing as { Id: string })?.Id || (thing as { id: string })?.id || thing;
 	if (typeof address !== 'string') {
-		throw new Error('ADDRESS could not be extracted [getAddress]')
+		throw new Error('ADDRESS could not be extracted [getAddress]');
 	}
 
 	return address;
@@ -29,10 +31,10 @@ export class Reconciler {
 	async reconcile() {
 		const curBlockHeight = parseInt(this.blockOps.height);
 		if (!Number.isInteger(curBlockHeight)) {
-			throw new Error("Block height is not a number");
+			throw new Error('Block height is not a number');
 		}
 
-		const prevBlockHeight = curBlockHeight -1;
+		const prevBlockHeight = curBlockHeight - 1;
 		const preBlockDatas = await this.getAccountDatas(prevBlockHeight);
 		// warning: preBlockData is mutated in place here
 		this.accountOperations(preBlockDatas, this.parseOperations());
@@ -43,29 +45,29 @@ export class Reconciler {
 			const accountedData = preBlockDatas[address];
 			// What the node thinks the balance is
 			const systemData = postBlockDatas[address];
-			if(!accountedData || !systemData) {
+			if (!accountedData || !systemData) {
 				return {
 					address,
 					error: true,
-					height: curBlockHeight
-				}
+					height: curBlockHeight,
+				};
 			}
 
 			const datasAreEqual =
 				accountedData?.free.eq(systemData?.free) &&
 				accountedData.reserved.eq(systemData?.reserved) &&
 				accountedData.miscFrozen.eq(systemData.miscFrozen) &&
-				accountedData.feeFrozen.eq(systemData.feeFrozen)
+				accountedData.feeFrozen.eq(systemData.feeFrozen);
 
-			if(!datasAreEqual) {
-				console.log(`Error with ${address} at height ${curBlockHeight}`)
+			if (!datasAreEqual) {
+				console.log(`Error with ${address} at height ${curBlockHeight}`);
 				console.log('Pre data: ', bnObjToString(accountedData));
 				console.log('Post data: ', bnObjToString(systemData));
 				return {
 					address,
 					error: true,
-					height: curBlockHeight
-				}
+					height: curBlockHeight,
+				};
 			}
 		}
 
@@ -76,40 +78,49 @@ export class Reconciler {
 
 		return {
 			error: false,
-			height: curBlockHeight
-		}
+			height: curBlockHeight,
+		};
 	}
 
-	accountOperations(accountDatas: Record<string, PAccountData>, operations: POperation[]) {
+	accountOperations(
+		accountDatas: Record<string, PAccountData>,
+		operations: POperation[]
+	) {
 		operations.forEach(({ address, accountDataField, amount }) => {
 			if (address in accountDatas) {
-				const val = (accountDatas[address] as PAccountData)[accountDataField];
+				const val = accountDatas[address][accountDataField];
 				const updatedVal = val.add(amount.value);
-				(accountDatas[address] as PAccountData)[accountDataField] = updatedVal;
+				accountDatas[address][accountDataField] = updatedVal;
 			} else {
-				console.error(`ADDDRESS ${address} not found in accountData [Reconciler.accountOperations]`)
+				console.error(
+					`ADDDRESS ${address} not found in accountData [Reconciler.accountOperations]`
+				);
 			}
-		})
+		});
 	}
 
 	private parseOperations(): POperation[] {
 		return this.blockOps.operations.map((op) => {
 			const accountDataField = op.storage.field?.split('.')[1];
-			if(!accountDataField) {
+			if (!accountDataField) {
 				throw {
 					message: 'Expect a field for account data',
 					storage: op.storage,
-				}
+				};
 			}
 			// TODO: This can be changed to an is type check
-			if(!["free", "reserved", "miscFrozen", "feeFrozen"].includes(accountDataField)) {
+			if (
+				!['free', 'reserved', 'miscFrozen', 'feeFrozen'].includes(
+					accountDataField
+				)
+			) {
 				throw {
 					message: 'AccountData had a different field then expected',
 					storage: op.storage,
-				}
+				};
 			}
 
-			const address = getAddress(op.address)
+			const address = getAddress(op.address);
 			return {
 				operationId: op.operationId,
 				storage: op.storage,
@@ -118,20 +129,26 @@ export class Reconciler {
 				amount: {
 					value: new BN(op.amount.value),
 					currency: op.amount.curency,
-				}
-			}
-		})
+				},
+			};
+		});
 	}
 
 	private findAccounts(): string[] {
-		return [...this.blockOps.operations.reduce((seen, op) => {
-			const address = getAddress(op.address);
-			seen.add(address);
-			return seen;
-		}, new Set<string>()).values()];
+		return [
+			...this.blockOps.operations
+				.reduce((seen, op) => {
+					const address = getAddress(op.address);
+					seen.add(address);
+					return seen;
+				}, new Set<string>())
+				.values(),
+		];
 	}
 
-	private async getAccountDatas(height: number): Promise<Record<string, PAccountData>> {
+	private async getAccountDatas(
+		height: number
+	): Promise<Record<string, PAccountData>> {
 		const accountDatas = await Promise.all(
 			this.findAccounts().map(async (address) => {
 				const d = await this.api.getAccountsBalanceInfo(address, height);
@@ -142,8 +159,8 @@ export class Reconciler {
 					free: new BN(d.free),
 					reserved: new BN(d.reserved),
 					miscFrozen: new BN(d.miscFrozen),
-					feeFrozen: new BN(d.feeFrozen)
-				}
+					feeFrozen: new BN(d.feeFrozen),
+				};
 			})
 		);
 

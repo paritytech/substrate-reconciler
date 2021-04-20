@@ -90,3 +90,4 @@ class ApiSidecar {
     }
 }
 exports.ApiSidecar = ApiSidecar;
+//# sourceMappingURL=SidecarApi.js.map

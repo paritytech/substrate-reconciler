@@ -2,7 +2,7 @@ export interface AccountsBalanceInfo {
 	at: {
 		hash: string;
 		height: string;
-	},
+	};
 	nonce: string;
 	tokenSymbol: string;
 	free: string;
@@ -15,7 +15,7 @@ export interface AccountsBalanceInfo {
 			amount: string;
 			reasons: string;
 		}
-	]
+	];
 }
 
 export interface BlocksOperations {

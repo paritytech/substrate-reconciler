@@ -1,4 +1,5 @@
-import BN from 'bn.js'
+import BN from 'bn.js';
+
 import { CurrencyId, OperationId, StorageResourceId } from './sidecar';
 
 /**
@@ -13,7 +14,10 @@ export interface PAccountData {
 	feeFrozen: BN;
 }
 
-export type AccountDataField = keyof Omit<PAccountData, "address" | "tokenSymbol">;
+export type AccountDataField = keyof Omit<
+	PAccountData,
+	'address' | 'tokenSymbol'
+>;
 
 /**
  * Parsed Operation.
@@ -24,7 +28,7 @@ export interface POperation {
 	storage: StorageResourceId;
 	accountDataField: AccountDataField;
 	amount: {
-		value: BN,
+		value: BN;
 		currency: CurrencyId;
-	}
+	};
 }

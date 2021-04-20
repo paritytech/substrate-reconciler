@@ -39,8 +39,8 @@ class Crawler {
             }
         }
         else {
-            let run = true;
-            let i = start;
+            const run = true;
+            const i = start;
             while (run) {
                 const isOk = await this.crawlHeight(i);
                 if (!isOk) {
@@ -62,3 +62,4 @@ class Crawler {
     }
 }
 exports.Crawler = Crawler;
+//# sourceMappingURL=Crawler.js.map

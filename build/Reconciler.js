@@ -12,6 +12,14 @@ function bnObjToString(o) {
         return acc;
     }, {});
 }
+function getAddress(thing) {
+    var _a, _b;
+    const address = ((_a = thing) === null || _a === void 0 ? void 0 : _a.Id) || ((_b = thing) === null || _b === void 0 ? void 0 : _b.id) || thing;
+    if (typeof address !== 'string') {
+        throw new Error('ADDRESS could not be extracted [getAddress]');
+    }
+    return address;
+}
 class Reconciler {
     constructor(blockOps, sidecarUrl) {
         this.blockOps = blockOps;
@@ -20,7 +28,7 @@ class Reconciler {
     async reconcile() {
         const curBlockHeight = parseInt(this.blockOps.height);
         if (!Number.isInteger(curBlockHeight)) {
-            throw new Error("Block height is not a number");
+            throw new Error('Block height is not a number');
         }
         const prevBlockHeight = curBlockHeight - 1;
         const preBlockDatas = await this.getAccountDatas(prevBlockHeight);
@@ -36,11 +44,11 @@ class Reconciler {
                 return {
                     address,
                     error: true,
-                    height: curBlockHeight
+                    height: curBlockHeight,
                 };
             }
-            const datasAreEqual = accountedData?.free.eq(systemData?.free) &&
-                accountedData.reserved.eq(systemData?.reserved) &&
+            const datasAreEqual = (accountedData === null || accountedData === void 0 ? void 0 : accountedData.free.eq(systemData === null || systemData === void 0 ? void 0 : systemData.free)) &&
+                accountedData.reserved.eq(systemData === null || systemData === void 0 ? void 0 : systemData.reserved) &&
                 accountedData.miscFrozen.eq(systemData.miscFrozen) &&
                 accountedData.feeFrozen.eq(systemData.feeFrozen);
             if (!datasAreEqual) {
@@ -50,7 +58,7 @@ class Reconciler {
                 return {
                     address,
                     error: true,
-                    height: curBlockHeight
+                    height: curBlockHeight,
                 };
             }
         }
@@ -60,7 +68,7 @@ class Reconciler {
         // })
         return {
             error: false,
-            height: curBlockHeight
+            height: curBlockHeight,
         };
     }
     accountOperations(accountDatas, operations) {
@@ -71,13 +79,14 @@ class Reconciler {
                 accountDatas[address][accountDataField] = updatedVal;
             }
             else {
-                console.error('ADDDRESS not found in accountData [Reconciler.accountOperations]');
+                console.error(`ADDDRESS ${address} not found in accountData [Reconciler.accountOperations]`);
             }
         });
     }
     parseOperations() {
         return this.blockOps.operations.map((op) => {
-            const accountDataField = op.storage.field?.split('.')[1];
+            var _a;
+            const accountDataField = (_a = op.storage.field) === null || _a === void 0 ? void 0 : _a.split('.')[1];
             if (!accountDataField) {
                 throw {
                     message: 'Expect a field for account data',
@@ -85,29 +94,35 @@ class Reconciler {
                 };
             }
             // TODO: This can be changed to an is type check
-            if (!["free", "reserved", "miscFrozen", "feeFrozen"].includes(accountDataField)) {
+            if (!['free', 'reserved', 'miscFrozen', 'feeFrozen'].includes(accountDataField)) {
                 throw {
                     message: 'AccountData had a different field then expected',
                     storage: op.storage,
                 };
             }
+            const address = getAddress(op.address);
             return {
                 operationId: op.operationId,
                 storage: op.storage,
-                address: op.address.Id,
+                address,
                 accountDataField: accountDataField,
                 amount: {
                     value: new bn_js_1.default(op.amount.value),
                     currency: op.amount.curency,
-                }
+                },
             };
         });
     }
     findAccounts() {
-        return [...this.blockOps.operations.reduce((seen, op) => {
-                seen.add(op.address.Id);
+        return [
+            ...this.blockOps.operations
+                .reduce((seen, op) => {
+                const address = getAddress(op.address);
+                seen.add(address);
                 return seen;
-            }, new Set()).values()];
+            }, new Set())
+                .values(),
+        ];
     }
     async getAccountDatas(height) {
         const accountDatas = await Promise.all(this.findAccounts().map(async (address) => {
@@ -118,7 +133,7 @@ class Reconciler {
                 free: new bn_js_1.default(d.free),
                 reserved: new bn_js_1.default(d.reserved),
                 miscFrozen: new bn_js_1.default(d.miscFrozen),
-                feeFrozen: new bn_js_1.default(d.feeFrozen)
+                feeFrozen: new bn_js_1.default(d.feeFrozen),
             };
         }));
         return accountDatas.reduce((acc, data) => {
@@ -128,3 +143,4 @@ class Reconciler {
     }
 }
 exports.Reconciler = Reconciler;
+//# sourceMappingURL=Reconciler.js.map
