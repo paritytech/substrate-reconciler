@@ -28,7 +28,8 @@ class Reconciler {
     async reconcile() {
         const curBlockHeight = parseInt(this.blockOps.height);
         if (!Number.isInteger(curBlockHeight)) {
-            throw new Error('Block height is not a number');
+						console.log('curBlockHeight ', curBlockHeight);
+            throw new Error('Block height is not a integer');
         }
         const prevBlockHeight = curBlockHeight - 1;
         const preBlockDatas = await this.getAccountDatas(prevBlockHeight);
