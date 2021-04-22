@@ -28,9 +28,12 @@ export interface BlocksOperations {
 
 export interface Operation {
 	operationId: OperationId;
-	address: {
-		Id: string;
-	};
+	address:
+		| {
+				Id: string;
+		  }
+		| { id: string }
+		| string;
 	storage: StorageResourceId;
 	amount: Amount;
 }
@@ -38,10 +41,8 @@ export interface Operation {
 export interface OperationId {
 	operationIndex: number;
 	phase: {
-		onInitialize?: boolean;
-		onFinalize?: boolean;
-		// extrinsic index
-		extrinsic?: number;
+		variant: 'onFinalize' | 'onInitialize' | 'applyExtrinsic' | string;
+		extrinsicIndex?: number;
 	};
 	parentSpanId: ParentSpanId[];
 	eventIndex: number;

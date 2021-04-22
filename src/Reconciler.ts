@@ -3,25 +3,46 @@ import BN from 'bn.js';
 import { ApiSidecar } from './SidecarApi';
 import {
 	AccountDataField,
+	isToStringAble,
 	PAccountData,
 	POperation,
 	ReconcileResult,
 } from './types/reconciler';
 import { BlocksOperations, Operation } from './types/sidecar';
 
-function bnObjToString(o: Record<string, any>): Record<string, string> {
-	return Object.keys(o).reduce((acc, cur) => {
-		acc[cur] = o[cur].toString ? o[cur].toString(10) : o[cur];
+/**
+ * Useful for converting all BN values to integer strings, for debug display.
+ *
+ * @param o Object to convert its values to strings.
+ * @returns A stringified version of the object.
+ */
+function objToString(o: PAccountData): string {
+	const stringObj = Object.keys(o).reduce((acc, cur) => {
+		const maybeToStringable = o[cur as keyof PAccountData];
+		acc[cur] = isToStringAble(maybeToStringable)
+			? maybeToStringable.toString(10)
+			: maybeToStringable;
 
 		return acc;
-	}, {} as Record<string, string>);
+	}, {} as Record<string, string | unknown>);
+
+	return JSON.stringify(stringObj, null, 2);
 }
 
+/**
+ * Extract address from possible formats an address might be in from a response
+ * from api-sidecar. Note: the `id` is from the `MultiAddress` enum and the different
+ * casing reflects different versions of polkadot.js that case differently (newer
+ * versions should always be camelCase).
+ *
+ * @param thing
+ * @returns
+ */
 function getAddress(thing: unknown): string {
 	const address =
 		(thing as { Id: string })?.Id || (thing as { id: string })?.id || thing;
 	if (typeof address !== 'string') {
-		throw new Error('ADDRESS could not be extracted [getAddress]');
+		throw new Error('[Reconciler::getAddress] Address could not be extracted ');
 	}
 
 	return address;
@@ -43,6 +64,11 @@ function findAccounts(operations: Operation[]): string[] {
 	];
 }
 
+/**
+ *
+ * @param operations
+ * @returns Operations with integer fields as BN adn the address as a string.
+ */
 function parseOperations(operations: Operation[]): POperation[] {
 	return operations.map((op) => {
 		const accountDataField = op.storage.field?.split('.')[1];
@@ -52,12 +78,7 @@ function parseOperations(operations: Operation[]): POperation[] {
 				storage: op.storage,
 			};
 		}
-		// TODO: This can be changed to an is type check
-		if (
-			!['free', 'reserved', 'miscFrozen', 'feeFrozen'].includes(
-				accountDataField
-			)
-		) {
+		if (!accountDataField.includes(accountDataField)) {
 			throw {
 				message: 'AccountData had a different field then expected',
 				storage: op.storage,
@@ -66,15 +87,35 @@ function parseOperations(operations: Operation[]): POperation[] {
 
 		const address = getAddress(op.address);
 		return {
-			operationId: op.operationId,
-			storage: op.storage,
+			// Note: we only use `accountDataField`, `address` and amount.value. The rest are
+			// here for debugging convience when we do the actual reconciling.
 			address,
 			accountDataField: accountDataField as AccountDataField,
-			amount: {
-				value: new BN(op.amount.value),
-				currency: op.amount.curency,
-			},
+			value: new BN(op.amount.value),
 		};
+	});
+}
+
+/**
+ * WARNING: `accountDatas` is mutated in place.
+ *
+ * @param accountDatas
+ * @param operations
+ */
+function accountOperations(
+	accountDatas: Record<string, PAccountData>,
+	operations: POperation[]
+): void {
+	operations.forEach(({ address, accountDataField, value }) => {
+		if (address in accountDatas) {
+			const val = accountDatas[address][accountDataField];
+			const updatedVal = val.add(value);
+			accountDatas[address][accountDataField] = updatedVal;
+		} else {
+			console.error(
+				`[Reconciler.accountOperations]: Address(${address}) not found in accountData`
+			);
+		}
 	});
 }
 
@@ -93,8 +134,8 @@ export class Reconciler {
 		const prevBlockHeight = curBlockHeight - 1;
 		const accounts = findAccounts(blockOps.operations);
 		const preBlockDatas = await this.getAccountDatas(prevBlockHeight, accounts);
-		// warning: preBlockData is mutated in place here
-		this.accountOperations(preBlockDatas, parseOperations(blockOps.operations));
+		// WARNING: preBlockData is mutated in place here
+		accountOperations(preBlockDatas, parseOperations(blockOps.operations));
 		const postBlockDatas = await this.getAccountDatas(curBlockHeight, accounts);
 
 		for (const address of Object.keys(preBlockDatas)) {
@@ -117,9 +158,11 @@ export class Reconciler {
 				accountedData.feeFrozen.eq(systemData.feeFrozen);
 
 			if (!datasAreEqual) {
-				console.log(`Error with ${address} at height ${curBlockHeight}`);
-				console.log('Pre data: ', bnObjToString(accountedData));
-				console.log('Post data: ', bnObjToString(systemData));
+				console.error(
+					`[Reconciler.reconcile] Error with ${address} at height ${curBlockHeight}` +
+						`[Reconciler.reconcile] Pre data: ${objToString(accountedData)}` +
+						`[Reconciler.reconcile] Post data: ${objToString(systemData)}`
+				);
 				return {
 					address,
 					error: true,
@@ -128,34 +171,19 @@ export class Reconciler {
 			}
 		}
 
-		// console.debug('Balances after processing the blocks operations.')
-		// Object.keys(preBlockDatas).forEach((addr) => {
-		// 	console.debug(bnObjToString(preBlockDatas[addr] as PAccountData))
-		// })
-
 		return {
 			error: false,
 			height: curBlockHeight,
 		};
 	}
 
-	accountOperations(
-		accountDatas: Record<string, PAccountData>,
-		operations: POperation[]
-	): void {
-		operations.forEach(({ address, accountDataField, amount }) => {
-			if (address in accountDatas) {
-				const val = accountDatas[address][accountDataField];
-				const updatedVal = val.add(amount.value);
-				accountDatas[address][accountDataField] = updatedVal;
-			} else {
-				console.error(
-					`ADDDRESS ${address} not found in accountData [Reconciler.accountOperations]`
-				);
-			}
-		});
-	}
-
+	/**
+	 * Fetch the balances of each AccountData field for each address in `accounts`.
+	 *
+	 * @param height Block height to fetch account balance data at.
+	 * @param accounts
+	 * @returns
+	 */
 	private async getAccountDatas(
 		height: number,
 		accounts: string[]

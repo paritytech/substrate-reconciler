@@ -6,17 +6,37 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Reconciler = void 0;
 const bn_js_1 = __importDefault(require("bn.js"));
 const SidecarApi_1 = require("./SidecarApi");
-function bnObjToString(o) {
-    return Object.keys(o).reduce((acc, cur) => {
-        acc[cur] = o[cur].toString ? o[cur].toString(10) : o[cur];
+const reconciler_1 = require("./types/reconciler");
+/**
+ * Useful for converting all BN values to integer strings, for debug display.
+ *
+ * @param o Object to convert its values to strings.
+ * @returns A stringified version of the object.
+ */
+function objToString(o) {
+    const stringObj = Object.keys(o).reduce((acc, cur) => {
+        const maybeToStringable = o[cur];
+        acc[cur] = reconciler_1.isToStringAble(maybeToStringable)
+            ? maybeToStringable.toString(10)
+            : maybeToStringable;
         return acc;
     }, {});
+    return JSON.stringify(stringObj, null, 2);
 }
+/**
+ * Extract address from possible formats an address might be in from a response
+ * from api-sidecar. Note: the `id` is from the `MultiAddress` enum and the different
+ * casing reflects different versions of polkadot.js that case differently (newer
+ * versions should always be camelCase).
+ *
+ * @param thing
+ * @returns
+ */
 function getAddress(thing) {
     var _a, _b;
     const address = ((_a = thing) === null || _a === void 0 ? void 0 : _a.Id) || ((_b = thing) === null || _b === void 0 ? void 0 : _b.id) || thing;
     if (typeof address !== 'string') {
-        throw new Error('ADDRESS could not be extracted [getAddress]');
+        throw new Error('[Reconciler::getAddress] Address could not be extracted ');
     }
     return address;
 }
@@ -35,6 +55,11 @@ function findAccounts(operations) {
             .values(),
     ];
 }
+/**
+ *
+ * @param operations
+ * @returns Operations with integer fields as BN adn the address as a string.
+ */
 function parseOperations(operations) {
     return operations.map((op) => {
         var _a;
@@ -45,8 +70,7 @@ function parseOperations(operations) {
                 storage: op.storage,
             };
         }
-        // TODO: This can be changed to an is type check
-        if (!['free', 'reserved', 'miscFrozen', 'feeFrozen'].includes(accountDataField)) {
+        if (!accountDataField.includes(accountDataField)) {
             throw {
                 message: 'AccountData had a different field then expected',
                 storage: op.storage,
@@ -54,15 +78,30 @@ function parseOperations(operations) {
         }
         const address = getAddress(op.address);
         return {
-            operationId: op.operationId,
-            storage: op.storage,
+            // Note: we only use `accountDataField`, `address` and amount.value. The rest are
+            // here for debugging convience when we do the actual reconciling.
             address,
             accountDataField: accountDataField,
-            amount: {
-                value: new bn_js_1.default(op.amount.value),
-                currency: op.amount.curency,
-            },
+            value: new bn_js_1.default(op.amount.value),
         };
+    });
+}
+/**
+ * WARNING: `accountDatas` is mutated in place.
+ *
+ * @param accountDatas
+ * @param operations
+ */
+function accountOperations(accountDatas, operations) {
+    operations.forEach(({ address, accountDataField, value }) => {
+        if (address in accountDatas) {
+            const val = accountDatas[address][accountDataField];
+            const updatedVal = val.add(value);
+            accountDatas[address][accountDataField] = updatedVal;
+        }
+        else {
+            console.error(`[Reconciler.accountOperations]: Address(${address}) not found in accountData`);
+        }
     });
 }
 class Reconciler {
@@ -77,8 +116,8 @@ class Reconciler {
         const prevBlockHeight = curBlockHeight - 1;
         const accounts = findAccounts(blockOps.operations);
         const preBlockDatas = await this.getAccountDatas(prevBlockHeight, accounts);
-        // warning: preBlockData is mutated in place here
-        this.accountOperations(preBlockDatas, parseOperations(blockOps.operations));
+        // WARNING: preBlockData is mutated in place here
+        accountOperations(preBlockDatas, parseOperations(blockOps.operations));
         const postBlockDatas = await this.getAccountDatas(curBlockHeight, accounts);
         for (const address of Object.keys(preBlockDatas)) {
             // What we think the balance is
@@ -97,9 +136,9 @@ class Reconciler {
                 accountedData.miscFrozen.eq(systemData.miscFrozen) &&
                 accountedData.feeFrozen.eq(systemData.feeFrozen);
             if (!datasAreEqual) {
-                console.log(`Error with ${address} at height ${curBlockHeight}`);
-                console.log('Pre data: ', bnObjToString(accountedData));
-                console.log('Post data: ', bnObjToString(systemData));
+                console.error(`[Reconciler.reconcile] Error with ${address} at height ${curBlockHeight}` +
+                    `[Reconciler.reconcile] Pre data: ${objToString(accountedData)}` +
+                    `[Reconciler.reconcile] Post data: ${objToString(systemData)}`);
                 return {
                     address,
                     error: true,
@@ -107,27 +146,18 @@ class Reconciler {
                 };
             }
         }
-        // console.debug('Balances after processing the blocks operations.')
-        // Object.keys(preBlockDatas).forEach((addr) => {
-        // 	console.debug(bnObjToString(preBlockDatas[addr] as PAccountData))
-        // })
         return {
             error: false,
             height: curBlockHeight,
         };
     }
-    accountOperations(accountDatas, operations) {
-        operations.forEach(({ address, accountDataField, amount }) => {
-            if (address in accountDatas) {
-                const val = accountDatas[address][accountDataField];
-                const updatedVal = val.add(amount.value);
-                accountDatas[address][accountDataField] = updatedVal;
-            }
-            else {
-                console.error(`ADDDRESS ${address} not found in accountData [Reconciler.accountOperations]`);
-            }
-        });
-    }
+    /**
+     * Fetch the balances of each AccountData field for each address in `accounts`.
+     *
+     * @param height Block height to fetch account balance data at.
+     * @param accounts
+     * @returns
+     */
     async getAccountDatas(height, accounts) {
         const accountDatas = await Promise.all(accounts.map(async (address) => {
             const d = await this.api.getAccountsBalanceInfo(address, height);
