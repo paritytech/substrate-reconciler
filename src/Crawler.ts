@@ -2,8 +2,10 @@ import { Reconciler } from './Reconciler';
 import { ApiSidecar } from './SidecarApi';
 
 export class Crawler {
+	private reconciler: Reconciler;
 	private api: ApiSidecar;
 	constructor(private sidecarUrl: string, private log?: (i: unknown) => void) {
+		this.reconciler = new Reconciler(this.sidecarUrl);
 		this.api = new ApiSidecar(this.sidecarUrl);
 	}
 
@@ -16,9 +18,8 @@ export class Crawler {
 
 	private async crawlHeight(height: number): Promise<boolean> {
 		const blockOperations = await this.api.getOperations(height);
-		const reconciler = new Reconciler(blockOperations, this.sidecarUrl);
 		try {
-			const result = await reconciler.reconcile();
+			const result = await this.reconciler.reconcile(blockOperations);
 			this.log && this.log(result);
 			return true;
 		} catch (e: unknown) {

@@ -32,3 +32,9 @@ export interface POperation {
 		currency: CurrencyId;
 	};
 }
+
+export interface ReconcileResult {
+	address?: string;
+	error: boolean;
+	height: number;
+}

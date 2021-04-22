@@ -20,22 +20,66 @@ function getAddress(thing) {
     }
     return address;
 }
+/**
+ * @param operations
+ * @returns a list of all addresses affected by the operations.
+ */
+function findAccounts(operations) {
+    return [
+        ...operations
+            .reduce((seen, op) => {
+            const address = getAddress(op.address);
+            seen.add(address);
+            return seen;
+        }, new Set())
+            .values(),
+    ];
+}
+function parseOperations(operations) {
+    return operations.map((op) => {
+        var _a;
+        const accountDataField = (_a = op.storage.field) === null || _a === void 0 ? void 0 : _a.split('.')[1];
+        if (!accountDataField) {
+            throw {
+                message: 'Expect a field for account data',
+                storage: op.storage,
+            };
+        }
+        // TODO: This can be changed to an is type check
+        if (!['free', 'reserved', 'miscFrozen', 'feeFrozen'].includes(accountDataField)) {
+            throw {
+                message: 'AccountData had a different field then expected',
+                storage: op.storage,
+            };
+        }
+        const address = getAddress(op.address);
+        return {
+            operationId: op.operationId,
+            storage: op.storage,
+            address,
+            accountDataField: accountDataField,
+            amount: {
+                value: new bn_js_1.default(op.amount.value),
+                currency: op.amount.curency,
+            },
+        };
+    });
+}
 class Reconciler {
-    constructor(blockOps, sidecarUrl) {
-        this.blockOps = blockOps;
+    constructor(sidecarUrl) {
         this.api = new SidecarApi_1.ApiSidecar(sidecarUrl);
     }
-    async reconcile() {
-        const curBlockHeight = parseInt(this.blockOps.height);
+    async reconcile(blockOps) {
+        const curBlockHeight = parseInt(blockOps.at.height);
         if (!Number.isInteger(curBlockHeight)) {
-						console.log('curBlockHeight ', curBlockHeight);
-            throw new Error('Block height is not a integer');
+            throw new Error('Block height is not a number');
         }
         const prevBlockHeight = curBlockHeight - 1;
-        const preBlockDatas = await this.getAccountDatas(prevBlockHeight);
+        const accounts = findAccounts(blockOps.operations);
+        const preBlockDatas = await this.getAccountDatas(prevBlockHeight, accounts);
         // warning: preBlockData is mutated in place here
-        this.accountOperations(preBlockDatas, this.parseOperations());
-        const postBlockDatas = await this.getAccountDatas(curBlockHeight);
+        this.accountOperations(preBlockDatas, parseOperations(blockOps.operations));
+        const postBlockDatas = await this.getAccountDatas(curBlockHeight, accounts);
         for (const address of Object.keys(preBlockDatas)) {
             // What we think the balance is
             const accountedData = preBlockDatas[address];
@@ -84,49 +128,8 @@ class Reconciler {
             }
         });
     }
-    parseOperations() {
-        return this.blockOps.operations.map((op) => {
-            var _a;
-            const accountDataField = (_a = op.storage.field) === null || _a === void 0 ? void 0 : _a.split('.')[1];
-            if (!accountDataField) {
-                throw {
-                    message: 'Expect a field for account data',
-                    storage: op.storage,
-                };
-            }
-            // TODO: This can be changed to an is type check
-            if (!['free', 'reserved', 'miscFrozen', 'feeFrozen'].includes(accountDataField)) {
-                throw {
-                    message: 'AccountData had a different field then expected',
-                    storage: op.storage,
-                };
-            }
-            const address = getAddress(op.address);
-            return {
-                operationId: op.operationId,
-                storage: op.storage,
-                address,
-                accountDataField: accountDataField,
-                amount: {
-                    value: new bn_js_1.default(op.amount.value),
-                    currency: op.amount.curency,
-                },
-            };
-        });
-    }
-    findAccounts() {
-        return [
-            ...this.blockOps.operations
-                .reduce((seen, op) => {
-                const address = getAddress(op.address);
-                seen.add(address);
-                return seen;
-            }, new Set())
-                .values(),
-        ];
-    }
-    async getAccountDatas(height) {
-        const accountDatas = await Promise.all(this.findAccounts().map(async (address) => {
+    async getAccountDatas(height, accounts) {
+        const accountDatas = await Promise.all(accounts.map(async (address) => {
             const d = await this.api.getAccountsBalanceInfo(address, height);
             return {
                 address,

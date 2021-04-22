@@ -41,7 +41,6 @@ async function main() {
     const crawler = new Crawler_1.Crawler(argv.sidecarUrl, console.log);
     let failedHeights;
     if (argv.singleHeight) {
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         argv.blockSet && console.log(`block set: ${(_a = argv.blockSet) === null || _a === void 0 ? void 0 : _a.toString()}`);
         failedHeights = await crawler.crawlSet([argv.singleHeight]);
     }

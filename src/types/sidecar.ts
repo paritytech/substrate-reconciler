@@ -19,7 +19,10 @@ export interface AccountsBalanceInfo {
 }
 
 export interface BlocksOperations {
-	height: string;
+	at: {
+		height: string;
+		hash: string;
+	};
 	operations: Operation[];
 }
 

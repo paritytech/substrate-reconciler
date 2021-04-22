@@ -7,6 +7,7 @@ class Crawler {
     constructor(sidecarUrl, log) {
         this.sidecarUrl = sidecarUrl;
         this.log = log;
+        this.reconciler = new Reconciler_1.Reconciler(this.sidecarUrl);
         this.api = new SidecarApi_1.ApiSidecar(this.sidecarUrl);
     }
     logError(e, height) {
@@ -17,9 +18,8 @@ class Crawler {
     }
     async crawlHeight(height) {
         const blockOperations = await this.api.getOperations(height);
-        const reconciler = new Reconciler_1.Reconciler(blockOperations, this.sidecarUrl);
         try {
-            const result = await reconciler.reconcile();
+            const result = await this.reconciler.reconcile(blockOperations);
             this.log && this.log(result);
             return true;
         }
