@@ -71,8 +71,8 @@ export class ApiSidecar {
 	 */
 	async getOperations(block?: number | string): Promise<BlocksOperations> {
 		const response = block
-			? await this.retryGet(`/blocks/${block}?operations=true`)
-			: await this.retryGet(`/blocks/head?operations=true`);
+			? await this.retryGet(`/blocks/${block}/traces/operations`)
+			: await this.retryGet(`/blocks/head/traces/operations`);
 
 		return response.data as BlocksOperations;
 	}
