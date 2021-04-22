@@ -1,3 +1,9 @@
+import { AxiosResponse } from 'axios';
+
+export type SidecarResponse =
+	| AxiosResponse<AccountsBalanceInfo>
+	| AxiosResponse<BlocksOperations>;
+
 export interface AccountsBalanceInfo {
 	at: {
 		hash: string;

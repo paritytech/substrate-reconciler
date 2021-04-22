@@ -1,6 +1,10 @@
 import axios, { AxiosInstance } from 'axios';
 
-import { AccountsBalanceInfo, BlocksOperations } from './types/sidecar';
+import {
+	AccountsBalanceInfo,
+	BlocksOperations,
+	SidecarResponse,
+} from './types/sidecar';
 
 /**
  * Block execution on the main thread for `ms` milliseconds.
@@ -30,7 +34,7 @@ export class ApiSidecar {
 	 * @param uri URI
 	 * @param attempts only for recursive cases
 	 */
-	private async retryGet(uri: string, attempts = 0): Promise<any> {
+	private async retryGet(uri: string, attempts = 0): Promise<SidecarResponse> {
 		try {
 			return await this.client.get(uri);
 		} catch (e) {
@@ -42,6 +46,7 @@ export class ApiSidecar {
 				return await this.retryGet(uri, attempts);
 			}
 
+			/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 			if (e.response) {
 				// The request was made and the server responded with a status code
 				// that falls out of the range of 2xx
@@ -57,7 +62,7 @@ export class ApiSidecar {
 				// Something happened in setting up the request that triggered an e
 				console.log('Error', e.message);
 			}
-			// console.log(e.config);
+			/* eslint-enable @typescript-eslint/no-unsafe-member-access */
 
 			throw e;
 		}
