@@ -71,7 +71,7 @@ function findAccounts(operations: Operation[]): string[] {
  */
 function parseOperations(operations: Operation[]): POperation[] {
 	return operations.map((op) => {
-		const accountDataField = op.storage.field?.split('.')[1];
+		const accountDataField = op.storage.field2;
 		if (!accountDataField) {
 			throw {
 				message: 'Expect a field for account data',

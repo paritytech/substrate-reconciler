@@ -1,5 +1,7 @@
 import { AxiosResponse } from 'axios';
 
+import { AccountDataField } from './reconciler';
+
 export type SidecarResponse =
 	| AxiosResponse<AccountsBalanceInfo>
 	| AxiosResponse<BlocksOperations>;
@@ -48,10 +50,13 @@ export interface OperationId {
 	operationIndex: number;
 	phase: {
 		variant: 'onFinalize' | 'onInitialize' | 'applyExtrinsic' | string;
-		extrinsicIndex?: number;
+		/**
+		 * Only exists when `variant` is `applyExtrinsic`.
+		 */
+		extrinsicIndex?: string;
 	};
 	parentSpanId: ParentSpanId[];
-	eventIndex: number;
+	eventIndex: string;
 }
 
 export interface ParentSpanId {
@@ -72,5 +77,6 @@ interface Amount {
 export interface StorageResourceId {
 	pallet: string;
 	item: string;
-	field?: string;
+	field1: 'data';
+	field2: AccountDataField;
 }
