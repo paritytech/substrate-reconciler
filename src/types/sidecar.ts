@@ -28,8 +28,8 @@ export interface AccountsBalanceInfo {
 
 export interface BlocksOperations {
 	at: {
-		height: string;
 		hash: string;
+		number: string;
 	};
 	operations: Operation[];
 }

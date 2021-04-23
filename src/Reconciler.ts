@@ -2,7 +2,6 @@ import BN from 'bn.js';
 
 import { ApiSidecar } from './SidecarApi';
 import {
-	AccountDataField,
 	isToStringAble,
 	PAccountData,
 	POperation,
@@ -90,7 +89,7 @@ function parseOperations(operations: Operation[]): POperation[] {
 			// Note: we only use `accountDataField`, `address` and amount.value. The rest are
 			// here for debugging convience when we do the actual reconciling.
 			address,
-			accountDataField: accountDataField as AccountDataField,
+			accountDataField: accountDataField,
 			value: new BN(op.amount.value),
 		};
 	});
@@ -126,7 +125,7 @@ export class Reconciler {
 	}
 
 	async reconcile(blockOps: BlocksOperations): Promise<ReconcileResult> {
-		const curBlockHeight = parseInt(blockOps.at.height);
+		const curBlockHeight = parseInt(blockOps.at.number, 10);
 		if (!Number.isInteger(curBlockHeight)) {
 			throw new Error('Block height is not a number');
 		}
@@ -159,9 +158,9 @@ export class Reconciler {
 
 			if (!datasAreEqual) {
 				console.error(
-					`[Reconciler.reconcile] Error with ${address} at height ${curBlockHeight}` +
-						`[Reconciler.reconcile] Pre data: ${objToString(accountedData)}` +
-						`[Reconciler.reconcile] Post data: ${objToString(systemData)}`
+					`[Reconciler.reconcile] Error with ${address} at height ${curBlockHeight}\n` +
+						`Pre data: ${objToString(accountedData)}\n` +
+						`Post data: ${objToString(systemData)}`
 				);
 				return {
 					address,
