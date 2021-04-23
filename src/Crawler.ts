@@ -10,6 +10,12 @@ export class Crawler {
 		this.api = new ApiSidecar(this.sidecarUrl);
 	}
 
+	/**
+	 * Crawl a single block height.
+	 *
+	 * @param height block height to reconcile.
+	 * @returns wether or not the balance changes from the block reconciled.
+	 */
 	private async crawlHeight(height: number): Promise<boolean> {
 		const blockOperations = await this.api.getOperations(height);
 		try {
@@ -22,6 +28,13 @@ export class Crawler {
 		}
 	}
 
+	/**
+	 * Reconcile every block in the specified inclusive range.
+	 *
+	 * @param start first block height in range
+	 * @param end last block height in range
+	 * @returns a list of block heights that did not reconcile.
+	 */
 	async crawl(start: number, end?: number): Promise<number[]> {
 		const errorHeights = [];
 		if (end) {
@@ -45,6 +58,12 @@ export class Crawler {
 		return errorHeights;
 	}
 
+	/**
+	 * Reconcile blocks from a list of heights.
+	 *
+	 * @param blockHeights array of block heights to reconcile
+	 * @returns a list of block heights that did not reconcile.
+	 */
 	async crawlSet(blockHeights: number[]): Promise<number[]> {
 		const errorHeights = [];
 		for (const height of blockHeights) {
