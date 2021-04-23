@@ -40,17 +40,17 @@ async function main() {
 
 	let failedHeights;
 	if (argv.singleHeight) {
-		argv.blockSet && console.log(`block set: ${argv.blockSet?.toString()}`);
+		console.log(`Reconciling block number: ${argv.singleHeight}`);
 		failedHeights = await crawler.crawlSet([argv.singleHeight]);
 	} else if (argv.blockSet) {
-		console.log(`block set: ${argv.blockSet?.toString()}`);
+		console.log(`Reconciling block set: ${argv.blockSet.toString()}`);
 		failedHeights = await crawler.crawlSet(argv.blockSet as number[]);
-	} else if (argv.startBlock) {
-		argv.startBlock &&
-			argv.endBlock &&
-			console.log(
-				`start: ${argv.startBlock} - end: ${argv.endBlock.toString()}`
-			);
+	} else if (argv.startBlock && argv.endBlock) {
+		console.log(
+			`Reconciling block range: ${
+				argv.startBlock
+			}..=${argv.endBlock.toString()}`
+		);
 		failedHeights = await crawler.crawl(argv.startBlock, argv.endBlock);
 	} else {
 		console.log('no valid options selected');
