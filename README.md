@@ -49,5 +49,6 @@ Options:
   -b, --blockSet      Array of block heights to call. Overides start/end block
                                                                          [array]
   -i, --singleHeight  Crawl a block at a single height                  [number]
-  -h, --help          Show help                                        [boolean]
+  -l, --logSuccesus   Log block information about succesfully reconciled blocks
+                                                       [boolean] [default: true]
 ```
