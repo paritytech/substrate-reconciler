@@ -1,12 +1,15 @@
 {
   "name": "substrate-reconciler",
   "version": "0.1.0",
-  "description": "Prototype balance reconciler for usage with substrate-api-sidecars block tracing endpoint",
+  "description": "Prototype balance reconciler CLI for usage with substrate-api-sidecars block tracing endpoint",
   "main": "index.js",
   "repository": "https://github.com/paritytech/substrate-reconciler.git",
   "author": "emostov <32168567+emostov@users.noreply.github.com>",
   "license": "APACHE-2.0",
   "private": true,
+  "bin": {
+    "reconciler": "build/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "lint": "tsc && eslint . --ext ts"
@@ -15,6 +18,7 @@
     "@substrate/dev": "^0.4.1",
     "axios": "^0.21.1",
     "bn.js": "^5.1.3",
+    "winston": "^3.3.3",
     "yargs": "^16.2.0"
   },
   "devDependencies": {

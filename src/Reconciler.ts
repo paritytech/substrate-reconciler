@@ -1,7 +1,9 @@
 import BN from 'bn.js';
 
+import { log } from './log';
 import { ApiSidecar } from './SidecarApi';
 import {
+	isAccountDataField,
 	isToStringAble,
 	PAccountData,
 	POperation,
@@ -48,6 +50,8 @@ function getAddress(thing: unknown): string {
 }
 
 /**
+ * Extract all the addresses that are affected by the given operations.
+ *
  * @param operations
  * @returns a list of all addresses affected by the operations.
  */
@@ -64,6 +68,9 @@ function findAccounts(operations: Operation[]): string[] {
 }
 
 /**
+ * Parse the operations from sidecars JSON response by pulling out the fields we
+ * need and serializing all integer fields to instances of BN.js (so we can
+ * do non overflowing arithmetic later on.).
  *
  * @param operations
  * @returns Operations with integer fields as BN adn the address as a string.
@@ -72,12 +79,15 @@ function parseOperations(operations: Operation[]): POperation[] {
 	return operations.map((op) => {
 		const accountDataField = op.storage.field2;
 		if (!accountDataField) {
+			// Check if the field exists at all
 			throw {
 				message: 'Expect a field for account data',
 				storage: op.storage,
 			};
 		}
-		if (!accountDataField.includes(accountDataField)) {
+		if (!isAccountDataField(accountDataField)) {
+			// Check if the field is one we know of and expect. If not we are in a runtime
+			// this program is not prepared to handle.
 			throw {
 				message: 'AccountData had a different field then expected',
 				storage: op.storage,
@@ -86,8 +96,6 @@ function parseOperations(operations: Operation[]): POperation[] {
 
 		const address = getAddress(op.address);
 		return {
-			// Note: we only use `accountDataField`, `address` and amount.value. The rest are
-			// here for debugging convience when we do the actual reconciling.
 			address,
 			accountDataField: accountDataField,
 			value: new BN(op.amount.value),
@@ -96,6 +104,12 @@ function parseOperations(operations: Operation[]): POperation[] {
 }
 
 /**
+ * Do the actual accounting. This takes the operations and adds them up against
+ * the `AccountData` associated with the address from the block before.
+ * Once all the operations have been added to the corresponding `AccountData`
+ * object, the fields of the `AcountData` object should equal those in the chain's
+ * storage from after the block is executed.
+ *
  * WARNING: `accountDatas` is mutated in place.
  *
  * @param accountDatas
@@ -111,7 +125,7 @@ function accountOperations(
 			const updatedVal = val.add(value);
 			accountDatas[address][accountDataField] = updatedVal;
 		} else {
-			console.error(
+			throw new Error(
 				`[Reconciler.accountOperations]: Address(${address}) not found in accountData`
 			);
 		}
@@ -124,6 +138,14 @@ export class Reconciler {
 		this.api = new ApiSidecar(sidecarUrl);
 	}
 
+	/**
+	 * Reconcile balances based on the operations from api-sidecar's block operations
+	 * endpoint.
+	 *
+	 * @param blockOps sidecar block operations endpoint payload
+	 * @returns a list of objects that describe a block height and if there was a
+	 * failure at that height.
+	 */
 	async reconcile(blockOps: BlocksOperations): Promise<ReconcileResult> {
 		const curBlockHeight = parseInt(blockOps.at.number, 10);
 		if (!Number.isInteger(curBlockHeight)) {
@@ -157,7 +179,7 @@ export class Reconciler {
 				accountedData.feeFrozen.eq(systemData.feeFrozen);
 
 			if (!datasAreEqual) {
-				console.error(
+				log.error(
 					`[Reconciler.reconcile] Error with ${address} at height ${curBlockHeight}\n` +
 						`Pre data: ${objToString(accountedData)}\n` +
 						`Post data: ${objToString(systemData)}`

@@ -1,29 +1,23 @@
+import { log } from './log';
 import { Reconciler } from './Reconciler';
 import { ApiSidecar } from './SidecarApi';
 
 export class Crawler {
 	private reconciler: Reconciler;
 	private api: ApiSidecar;
-	constructor(private sidecarUrl: string, private log?: (i: unknown) => void) {
+	constructor(private sidecarUrl: string, private logSuccess: boolean) {
 		this.reconciler = new Reconciler(this.sidecarUrl);
 		this.api = new ApiSidecar(this.sidecarUrl);
-	}
-
-	private logError(e: unknown, height: number) {
-		this.log && this.log(`Failed to reconcile block ${height}`);
-		this.log && this.log(e);
-		console.error(`Failed to reconcile block ${height}`);
-		console.error(e);
 	}
 
 	private async crawlHeight(height: number): Promise<boolean> {
 		const blockOperations = await this.api.getOperations(height);
 		try {
 			const result = await this.reconciler.reconcile(blockOperations);
-			this.log && this.log(result);
+			this.logSuccess && log.info(JSON.stringify(result));
 			return true;
-		} catch (e: unknown) {
-			this.logError(e, height);
+		} catch (e) {
+			log.error(`Failed to reconcile block ${height}: ${e as string}`);
 			return false;
 		}
 	}
