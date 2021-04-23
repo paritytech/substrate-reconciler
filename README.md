@@ -1,6 +1,6 @@
 # substrate-reconciler
 
-Prototype balance reconciler for usage with `substrate-api-sidecars` block tracing endpoint
+Prototype balance reconciler for usage with `substrate-api-sidecars` block operations endpoint
 
 ## account with me
 
@@ -35,4 +35,19 @@ Learn the other options of the CLI
 
 ```bash
 ts-node src/index.ts --help
+```
+
+## options
+
+```bash
+Options:
+      --version       Show version number                              [boolean]
+  -S, --sidecarUrl    Url for substrate-api-sidecar
+                                    [string] [default: "http://127.0.0.1:8080/"]
+  -s, --startBlock    Block to start balance reconciliation on          [number]
+  -e, --endBlock      Block to end balance reconcilation on             [number]
+  -b, --blockSet      Array of block heights to call. Overides start/end block
+                                                                         [array]
+  -i, --singleHeight  Crawl a block at a single height                  [number]
+  -h, --help          Show help                                        [boolean]
 ```
