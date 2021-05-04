@@ -21,7 +21,7 @@ export class Crawler {
 		try {
 			const result = await this.reconciler.reconcile(blockOperations);
 			this.logSuccess && log.info(JSON.stringify(result));
-			return true;
+			return !result.error;
 		} catch (e) {
 			log.error(`Failed to reconcile block ${height}: ${e as string}`);
 			return false;

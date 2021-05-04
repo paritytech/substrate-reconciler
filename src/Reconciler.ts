@@ -166,9 +166,9 @@ export class Reconciler {
 			const systemData = postBlockDatas[address];
 			if (!accountedData || !systemData) {
 				return {
-					address,
 					error: true,
 					height: curBlockHeight,
+					address,
 				};
 			}
 
