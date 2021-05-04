@@ -147,7 +147,7 @@ export class Reconciler {
 	 * failure at that height.
 	 */
 	async reconcile(blockOps: BlocksOperations): Promise<ReconcileResult> {
-		const curBlockHeight = parseInt(blockOps.at.number, 10);
+		const curBlockHeight = parseInt(blockOps.at.height, 10);
 		if (!Number.isInteger(curBlockHeight)) {
 			throw new Error('Block height is not a number');
 		}
