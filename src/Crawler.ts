@@ -17,8 +17,8 @@ export class Crawler {
 	 * @returns wether or not the balance changes from the block reconciled.
 	 */
 	private async crawlHeight(height: number): Promise<boolean> {
-		const blockOperations = await this.api.getOperations(height);
 		try {
+			const blockOperations = await this.api.getOperations(height);
 			const result = await this.reconciler.reconcile(blockOperations);
 			this.logSuccess && log.info(JSON.stringify(result));
 			return !result.error;
