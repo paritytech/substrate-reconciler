@@ -26,3 +26,7 @@ updates:
       - dependency-name: "@polkadot/util-crypto"
     labels:
       - "dependencies"
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: daily
